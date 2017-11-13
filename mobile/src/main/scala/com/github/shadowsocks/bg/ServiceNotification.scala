@@ -18,7 +18,7 @@
 /*                                                                             */
 /*******************************************************************************/
 
-package com.github.shadowsocks
+package com.github.shadowsocks.bg
 
 import java.util.Locale
 
@@ -29,12 +29,14 @@ import android.support.v4.app.NotificationCompat
 import android.support.v4.app.NotificationCompat.BigTextStyle
 import android.support.v4.content.ContextCompat
 import com.github.shadowsocks.aidl.IShadowsocksServiceCallback.Stub
-import com.github.shadowsocks.utils.{Action, State, TrafficMonitor, Utils}
+import com.github.shadowsocks.utils.{Action, Utils}
+import com.github.shadowsocks.{MainActivity, R}
 
 /**
   * @author Mygod
   */
-class ShadowsocksNotification(private val service: BaseService, profileName: String, visible: Boolean = false) {
+class ServiceNotification(private val service: BaseService, profileName: String,
+                          channel: String, visible: Boolean = false) {
   private val keyGuard = service.getSystemService(Context.KEYGUARD_SERVICE).asInstanceOf[KeyguardManager]
   private lazy val nm = service.getSystemService(Context.NOTIFICATION_SERVICE).asInstanceOf[NotificationManager]
   private lazy val callback = new Stub {
@@ -52,7 +54,7 @@ class ShadowsocksNotification(private val service: BaseService, profileName: Str
   private var lockReceiver: BroadcastReceiver = _
   private var callbackRegistered: Boolean = _
 
-  private val builder = new NotificationCompat.Builder(service)
+  private val builder = new NotificationCompat.Builder(service, channel)
     .setWhen(0)
     .setColor(ContextCompat.getColor(service, R.color.material_primary_500))
     .setTicker(service.getString(R.string.forward_success))
@@ -74,7 +76,7 @@ class ShadowsocksNotification(private val service: BaseService, profileName: Str
   service.registerReceiver(lockReceiver, screenFilter)
 
   private def update(action: String, forceShow: Boolean = false) =
-    if (forceShow || service.getState == State.CONNECTED) action match {
+    if (forceShow || service.getState == ServiceState.CONNECTED) action match {
       case Intent.ACTION_SCREEN_OFF =>
         setVisible(visible && !Utils.isLollipopOrAbove, forceShow)
         unregisterCallback()  // unregister callback to save battery
